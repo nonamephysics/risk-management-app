@@ -1,0 +1,134 @@
+.file-upload h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.auth-required-message {
+  text-align: center;
+  padding: 2rem;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  color: #856404;
+}
+
+.auth-required-message h2 {
+  color: #856404;
+  margin-bottom: 1rem;
+}
+
+.auth-required-message p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input[type="text"] {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group input[type="file"] {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.form-group small {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.upload-form button {
+  padding: 0.75rem 1.5rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.upload-form button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.upload-form button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.upload-result {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.upload-result.success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.upload-result.has-errors {
+  background-color: #fff3cd;
+  border-color: #ffd57e;
+  color: #856404;
+}
+
+.upload-result h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.validation-errors {
+  margin-top: 1rem;
+}
+
+.validation-errors h4 {
+  color: #dc3545;
+  margin-bottom: 0.5rem;
+}
+
+.error-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.error-item {
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.error-item:last-child {
+  margin-bottom: 0;
+}

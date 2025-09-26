@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: risk_app_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: risk_app
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - risk_app_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: risk_app_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - DATABASE_NAME=risk_app
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    networks:
+      - risk_app_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: risk_app_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - risk_app_network
+
+volumes:
+  mongodb_data:
+
+networks:
+  risk_app_network:
+    driver: bridge
