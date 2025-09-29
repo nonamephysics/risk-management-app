@@ -57,7 +57,7 @@ async def upload_document(
     tag: str = Form(...),
     document_service: DocumentService = Depends(get_document_service)
 ):
-    """Upload a CSV or XLSX file with validation"""
+    """Upload a CSV, XLSX, SAS7BDAT, or XPT file with validation"""
     print("DEBUG: Upload endpoint reached successfully")
     
     try:
@@ -87,9 +87,13 @@ async def upload_document(
             raise HTTPException(status_code=409, detail=f"Tag '{tag.strip()}' already exists. Please choose a different tag.")
         
         # Validate file type
-        if not file.filename.lower().endswith(('.csv', '.xlsx', '.xls')):
+        supported_extensions = ('.csv', '.xlsx', '.xls', '.sas7bdat', '.xpt')
+        if not file.filename.lower().endswith(supported_extensions):
             print(f"ERROR: Invalid file type: {file.filename}")
-            raise HTTPException(status_code=400, detail="Only CSV and XLSX files are supported")
+            raise HTTPException(
+                status_code=400, 
+                detail="Only CSV, XLSX, SAS7BDAT, and XPT files are supported"
+            )
         
     except HTTPException:
         raise

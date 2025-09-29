@@ -15,12 +15,13 @@ const FileUpload = ({ onUploadSuccess }) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       const fileType = selectedFile.name.split('.').pop().toLowerCase();
-      if (['csv', 'xlsx', 'xls'].includes(fileType)) {
+      const supportedTypes = ['csv', 'xlsx', 'xls', 'sas7bdat', 'xpt'];
+      if (supportedTypes.includes(fileType)) {
         setFile(selectedFile);
         setValidationErrors([]);
         setUploadResult(null);
       } else {
-        alert('Please select a CSV or XLSX file');
+        alert('Please select a CSV, XLSX, SAS7BDAT, or XPT file');
         e.target.value = '';
       }
     }
@@ -119,11 +120,11 @@ const FileUpload = ({ onUploadSuccess }) => {
           <input
             type="file"
             id="file-input"
-            accept=".csv,.xlsx,.xls"
+            accept=".csv,.xlsx,.xls,.sas7bdat,.xpt"
             onChange={handleFileChange}
             required
           />
-          <small>Supported formats: CSV, XLSX, XLS</small>
+          <small>Supported formats: CSV, XLSX, XLS, SAS7BDAT, XPT</small>
         </div>
         
         <button type="submit" disabled={isUploading || !file || !tag.trim()}>

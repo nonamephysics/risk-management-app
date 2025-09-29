@@ -1,10 +1,10 @@
 # Risk App - Document Management System
 
-A full-stack web application for uploading, validating, and managing CSV/XLSX documents with non-ASCII character detection.
+A full-stack web application for uploading, validating, and managing documents (CSV, XLSX, SAS7BDAT, XPT) with non-ASCII character detection and statistical data format support.
 
 ## Features
 
-- 📁 **File Upload**: Support for CSV and XLSX files
+- 📁 **Multi-Format File Upload**: Support for CSV, XLSX, SAS7BDAT, and XPT files
 - 🔍 **Validation**: Automatic detection of non-ASCII characters with location reporting
 - 💾 **Database Storage**: MongoDB integration for document persistence
 - 📋 **Document Management**: View, edit, and delete stored documents
@@ -98,7 +98,7 @@ risk_app/
 - **FastAPI Application**: Modern async Python web framework
 - **Database Integration**: MongoDB with Motor async driver  
 - **Authentication**: Token-based auth with user tracking
-- **File Processing**: CSV/XLSX validation and parsing
+- **File Processing**: Multi-format validation and parsing (CSV, XLSX, SAS7BDAT, XPT)
 - **API Documentation**: Auto-generated with OpenAPI/Swagger
 
 #### Frontend (`/frontend`)
@@ -210,7 +210,7 @@ npm start
 All features require login with security code (`admin123` by default).
 
 ### 📁 1. Upload Documents
-- Click "Select File" and choose a CSV or XLSX file
+- Click "Select File" and choose a supported file (CSV, XLSX, SAS7BDAT, or XPT)
 - Enter a **unique** tag/name for the document (no duplicates allowed)
 - Click "Upload File"
 - Review any validation errors if non-ASCII characters are found
@@ -265,12 +265,34 @@ All features require login with security code (`admin123` by default).
 - `GET /health` - Health check
 - `GET /docs` - Interactive API documentation
 
+## 📊 Supported File Formats
+
+### Format Support Matrix
+
+| **Format** | **Extension** | **Description** | **Use Cases** |
+|------------|---------------|-----------------|---------------|
+| **CSV** | `.csv` | Comma-Separated Values | General data exchange, Excel exports |
+| **Excel** | `.xlsx`, `.xls` | Microsoft Excel files | Spreadsheet data, formatted reports |
+| **SAS7BDAT** | `.sas7bdat` | SAS dataset files | Statistical analysis, pharmaceutical data |
+| **XPT** | `.xpt` | SAS Transport files | Regulatory submissions, data exchange |
+
+### Technical Details
+
+- **CSV Files**: UTF-8, Latin-1, and CP1252 encoding support with automatic detection
+- **Excel Files**: Full support for modern `.xlsx` and legacy `.xls` formats
+- **SAS7BDAT**: Native SAS dataset format reading with metadata preservation
+- **XPT**: SAS Transport format for regulatory compliance and data sharing
+- **Data Types**: Automatic handling of dates, numbers, text, and missing values
+- **Large Files**: Efficient memory usage for processing large datasets
+
 ## File Validation
 
 The system automatically validates uploaded files for:
 - **Non-ASCII Characters**: Detects characters outside the ASCII range (0-127)
 - **Location Reporting**: Provides exact row and column locations of issues
-- **Multiple Encodings**: Attempts to read CSV files with different encodings
+- **Multiple Encodings**: Attempts to read files with different encodings
+- **Format Integrity**: Validates file structure and data consistency
+- **Statistical Metadata**: Preserves variable labels and formats from SAS files
 
 ## Data Storage
 
