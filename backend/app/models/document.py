@@ -32,13 +32,14 @@ class Document(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     tag: str = Field(..., description="Document tag/name")
     filename: str = Field(..., description="Original filename")
-    file_type: str = Field(..., description="File type (csv/xlsx)")
+    file_type: str = Field(..., description="File type (csv/xlsx/sas7bdat/xpt/metadata)")
     data: List[Dict[str, Any]] = Field(..., description="Document data")
     validation_errors: List[ValidationError] = Field(default=[], description="Validation errors found")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     created_by: Optional[str] = Field(default=None, description="User who created the document")
     updated_by: Optional[str] = Field(default=None, description="User who last updated the document")
+    parent_document_id: Optional[str] = Field(default=None, description="Parent document ID (for metadata documents)")
 
     class Config:
         populate_by_name = True

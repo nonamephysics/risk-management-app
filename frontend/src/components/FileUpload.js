@@ -10,20 +10,50 @@ const FileUpload = ({ onUploadSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [uploadResult, setUploadResult] = useState(null);
+  const [excelSheets, setExcelSheets] = useState([]);
+  const [selectedSheet, setSelectedSheet] = useState('');
+  const [isLoadingSheets, setIsLoadingSheets] = useState(false);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       const fileType = selectedFile.name.split('.').pop().toLowerCase();
       const supportedTypes = ['csv', 'xlsx', 'xls', 'sas7bdat', 'xpt'];
+      
       if (supportedTypes.includes(fileType)) {
         setFile(selectedFile);
         setValidationErrors([]);
         setUploadResult(null);
+        setExcelSheets([]);
+        setSelectedSheet('');
+        
+        // If it's an Excel file, get sheet names
+        if (['xlsx', 'xls'].includes(fileType)) {
+          await loadExcelSheets(selectedFile);
+        }
       } else {
         alert('Please select a CSV, XLSX, SAS7BDAT, or XPT file');
         e.target.value = '';
       }
+    }
+  };
+
+  const loadExcelSheets = async (excelFile) => {
+    setIsLoadingSheets(true);
+    try {
+      const result = await documentService.getExcelSheets(excelFile, getAuthHeaders(false));
+      setExcelSheets(result.sheet_names || []);
+      
+      // Auto-select first sheet if only one sheet
+      if (result.sheet_names && result.sheet_names.length === 1) {
+        setSelectedSheet(result.sheet_names[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load Excel sheets:', error);
+      alert('Failed to load Excel sheets. You can still upload, but the first sheet will be used.');
+      setExcelSheets([]);
+    } finally {
+      setIsLoadingSheets(false);
     }
   };
 
@@ -35,12 +65,24 @@ const FileUpload = ({ onUploadSuccess }) => {
       return;
     }
 
+    // Check if Excel file needs sheet selection
+    const fileType = file.name.split('.').pop().toLowerCase();
+    if (['xlsx', 'xls'].includes(fileType) && excelSheets.length > 1 && !selectedSheet) {
+      alert('Please select which Excel sheet to upload');
+      return;
+    }
+
     setIsUploading(true);
     setValidationErrors([]);
     setUploadResult(null);
 
     try {
-      const result = await documentService.uploadDocument(file, tag.trim(), getAuthHeaders(false));
+      const result = await documentService.uploadDocument(
+        file, 
+        tag.trim(), 
+        selectedSheet || null, 
+        getAuthHeaders(false)
+      );
       setUploadResult(result);
       setValidationErrors(result.validation_errors || []);
       
@@ -52,6 +94,8 @@ const FileUpload = ({ onUploadSuccess }) => {
       if (!result.has_errors) {
         setFile(null);
         setTag('');
+        setExcelSheets([]);
+        setSelectedSheet('');
         document.getElementById('file-input').value = '';
       }
     } catch (error) {
@@ -126,8 +170,44 @@ const FileUpload = ({ onUploadSuccess }) => {
           />
           <small>Supported formats: CSV, XLSX, XLS, SAS7BDAT, XPT</small>
         </div>
+
+        {/* Excel Sheet Selection */}
+        {excelSheets.length > 0 && (
+          <div className="form-group">
+            <label htmlFor="sheet-select">Select Excel Sheet:</label>
+            {isLoadingSheets ? (
+              <div className="loading-sheets">Loading sheets...</div>
+            ) : (
+              <select
+                id="sheet-select"
+                value={selectedSheet}
+                onChange={(e) => setSelectedSheet(e.target.value)}
+                required
+              >
+                <option value="">Choose a sheet...</option>
+                {excelSheets.map((sheet, index) => (
+                  <option key={index} value={sheet}>
+                    {sheet}
+                  </option>
+                ))}
+              </select>
+            )}
+            <small>
+              This Excel file contains multiple sheets. Please select which sheet to process.
+            </small>
+          </div>
+        )}
         
-        <button type="submit" disabled={isUploading || !file || !tag.trim()}>
+        <button 
+          type="submit" 
+          disabled={
+            isUploading || 
+            !file || 
+            !tag.trim() || 
+            (excelSheets.length > 0 && !selectedSheet) ||
+            isLoadingSheets
+          }
+        >
           {isUploading ? 'Uploading...' : 'Upload File'}
         </button>
       </form>

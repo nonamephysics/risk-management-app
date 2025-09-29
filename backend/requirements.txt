@@ -7,7 +7,5 @@ openpyxl==3.1.2
 python-multipart==0.0.6
 pydantic==2.5.0
 python-dotenv==1.0.0
-# SAS file format support
-sas7bdat==2.2.3
-# Note: pyreadstat requires C++ build tools
-# Install separately if needed: pip install pyreadstat
+# Statistical file format support
+pyreadstat==1.2.7

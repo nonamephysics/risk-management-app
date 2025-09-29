@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
+from fastapi.security import HTTPBearer
 from typing import List
 import io
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
@@ -14,14 +15,58 @@ from app.security import get_current_user
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
+# Security scheme for OpenAPI
+security = HTTPBearer()
+
 
 async def get_document_service():
     return DocumentService()
 
 
-@router.post("/upload-debug")
+@router.post("/excel-sheets", dependencies=[Depends(security)])
+async def get_excel_sheets(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get sheet names from Excel file for selection
+    
+    Requires authentication with Bearer token.
+    """
+    try:
+        # Validate file type
+        if not file.filename.lower().endswith(('.xlsx', '.xls')):
+            raise HTTPException(
+                status_code=400, 
+                detail="Only Excel files (.xlsx, .xls) are supported for sheet selection"
+            )
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Get sheet names
+        from app.services.file_service import FileValidationService
+        sheet_names = FileValidationService.get_excel_sheet_names(file_content, file.filename)
+        
+        return {
+            "filename": file.filename,
+            "sheet_names": sheet_names,
+            "total_sheets": len(sheet_names)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR: Failed to get Excel sheets: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error reading Excel file: {str(e)}")
+
+@router.post("/upload-debug", dependencies=[Depends(security)])
 async def debug_upload(request: Request):
-    """Debug endpoint to see raw request data"""
+    """
+    Debug endpoint to see raw request data
+    
+    Requires authentication with Bearer token.
+    """
     print("DEBUG: Raw upload debug endpoint reached")
     print(f"DEBUG: Headers: {dict(request.headers)}")
     print(f"DEBUG: Method: {request.method}")
@@ -49,22 +94,24 @@ async def debug_upload(request: Request):
         print(f"DEBUG: Error type: {type(e)}")
         return {"error": str(e)}
 
-@router.post("/upload", response_model=dict)
+@router.post("/upload", response_model=dict, dependencies=[Depends(security)])
 async def upload_document(
     request: Request,
     current_user: dict = Depends(get_current_user),
     file: UploadFile = File(...),
     tag: str = Form(...),
+    sheet_name: str = Form(None),
     document_service: DocumentService = Depends(get_document_service)
 ):
-    """Upload a CSV, XLSX, SAS7BDAT, or XPT file with validation"""
+    """Upload a CSV, XLSX, SAS7BDAT, or XPT file with validation (Excel files support sheet selection)"""
     print("DEBUG: Upload endpoint reached successfully")
     
     try:
-        print(f"DEBUG: Upload attempt - file: {file.filename if file else 'NO FILE'}, tag: '{tag}', user: {current_user}")
+        print(f"DEBUG: Upload attempt - file: {file.filename if file else 'NO FILE'}, tag: '{tag}', sheet: '{sheet_name}', user: {current_user}")
         print(f"DEBUG: File content type: {file.content_type if file else 'NO FILE'}")
         print(f"DEBUG: File object: {type(file)}")
         print(f"DEBUG: Tag object: {type(tag)}")
+        print(f"DEBUG: Sheet name: {sheet_name}")
         print(f"DEBUG: Request headers: {dict(request.headers)}")
         
         # Validate inputs exist
@@ -106,13 +153,13 @@ async def upload_document(
         # Read file content
         file_content = await file.read()
         
-        # Parse file and get data
-        data, file_type = FileValidationService.read_file(file_content, file.filename)
+        # Parse file and get data with metadata (with optional sheet selection for Excel files)
+        data, file_type, metadata = FileValidationService.read_file_with_metadata(file_content, file.filename, sheet_name)
         
         # Validate for non-ASCII characters
         validation_errors = FileValidationService.detect_non_ascii_characters(data)
         
-        # Prepare document data
+        # Prepare main document data
         document_data = {
             "tag": tag.strip(),
             "filename": file.filename,
@@ -122,15 +169,49 @@ async def upload_document(
             "created_by": current_user.get("user_id", "unknown")
         }
         
-        # Save to database
+        # Save main document to database
         document_id = await document_service.create_document(document_data)
         
-        return {
+        # For SAS7BDAT and XPT files, also save metadata as a separate document
+        metadata_document_id = None
+        if file_type in ['sas7bdat', 'xpt'] and metadata:
+            # Check if metadata tag is unique
+            metadata_tag = f"{tag.strip()}_meta"
+            meta_tag_unique = await document_service.is_tag_unique(metadata_tag)
+            
+            if meta_tag_unique:
+                # Convert metadata to list format for storage
+                metadata_as_list = [{"metadata_key": key, "metadata_value": str(value)} for key, value in metadata.items()]
+                
+                metadata_document_data = {
+                    "tag": metadata_tag,
+                    "filename": f"{file.filename}_metadata.json",
+                    "file_type": "metadata",
+                    "data": metadata_as_list,
+                    "validation_errors": [],
+                    "created_by": current_user.get("user_id", "unknown"),
+                    "parent_document_id": document_id  # Link to main document
+                }
+                
+                metadata_document_id = await document_service.create_document(metadata_document_data)
+                print(f"DEBUG: Created metadata document with ID: {metadata_document_id}")
+            else:
+                print(f"WARNING: Metadata tag '{metadata_tag}' already exists, skipping metadata upload")
+        
+        response_data = {
             "message": "File uploaded successfully",
             "document_id": document_id,
             "validation_errors": [error.dict() for error in validation_errors],
             "has_errors": len(validation_errors) > 0
         }
+        
+        # Add metadata info if applicable
+        if metadata_document_id:
+            response_data["metadata_document_id"] = metadata_document_id
+            response_data["metadata_tag"] = f"{tag.strip()}_meta"
+            response_data["message"] = f"File and metadata uploaded successfully. Data: '{tag.strip()}', Metadata: '{tag.strip()}_meta'"
+        
+        return response_data
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -138,47 +219,63 @@ async def upload_document(
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 
-@router.get("/", response_model=List[DocumentListResponse])
+@router.get("/", response_model=List[DocumentListResponse], dependencies=[Depends(security)])
 async def get_all_documents(
     document_service: DocumentService = Depends(get_document_service),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all documents with basic information"""
+    """
+    Get all documents with basic information
+    
+    Requires authentication with Bearer token.
+    """
     return await document_service.get_all_documents()
 
 
-@router.get("/tag/{tag}", response_model=List[DocumentResponse])
+@router.get("/tag/{tag}", response_model=List[DocumentResponse], dependencies=[Depends(security)])
 async def get_documents_by_tag(
     tag: str,
     document_service: DocumentService = Depends(get_document_service),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get documents by tag with full content"""
+    """
+    Get documents by tag with full content
+    
+    Requires authentication with Bearer token.
+    """
     documents = await document_service.get_documents_by_tag_full(tag)
     return documents
 
 
-@router.get("/{document_id}", response_model=DocumentResponse)
+@router.get("/{document_id}", response_model=DocumentResponse, dependencies=[Depends(security)])
 async def get_document(
     document_id: str,
     document_service: DocumentService = Depends(get_document_service),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get a specific document by ID"""
+    """
+    Get a specific document by ID
+    
+    Requires authentication with Bearer token.
+    """
     document = await document_service.get_document_by_id(document_id)
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     return document
 
 
-@router.put("/{document_id}", response_model=dict)
+@router.put("/{document_id}", response_model=dict, dependencies=[Depends(security)])
 async def update_document(
     document_id: str,
     update_data: DocumentUpdate,
     document_service: DocumentService = Depends(get_document_service),
     current_user: dict = Depends(get_current_user)
 ):
-    """Update a document"""
+    """
+    Update a document
+    
+    Requires authentication with Bearer token.
+    """
     if not await document_service.document_exists(document_id):
         raise HTTPException(status_code=404, detail="Document not found")
     
@@ -200,13 +297,17 @@ async def update_document(
     return {"message": "Document updated successfully"}
 
 
-@router.delete("/{document_id}", response_model=dict)
+@router.delete("/{document_id}", response_model=dict, dependencies=[Depends(security)])
 async def delete_document(
     document_id: str,
     document_service: DocumentService = Depends(get_document_service),
     current_user: dict = Depends(get_current_user)
 ):
-    """Delete a document"""
+    """
+    Delete a document
+    
+    Requires authentication with Bearer token.
+    """
     if not await document_service.document_exists(document_id):
         raise HTTPException(status_code=404, detail="Document not found")
     

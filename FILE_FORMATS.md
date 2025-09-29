@@ -18,21 +18,33 @@ The Risk Management Application now supports multiple statistical and data file 
 - **Extensions**: `.xlsx`, `.xls`
 - **Libraries**: `openpyxl` for .xlsx, `xlrd` for .xls
 - **Use Cases**: Spreadsheet data, formatted reports, business data
-- **Features**: Multiple sheets, data types, formatted cells
+- **Features**: 
+  - Multiple sheets with **sheet selection support**
+  - Data types and formatted cells
+  - Automatic multi-sheet detection
+  - User-friendly sheet selection interface
 
 ### 📊 Statistical Formats (Optional Dependencies)
 
-#### SAS7BDAT (SAS Dataset Files)
+#### SAS7BDAT (SAS Dataset Files) 
 - **Extensions**: `.sas7bdat`
 - **Library Required**: `sas7bdat` (installed) or `pyreadstat` (optional)
 - **Use Cases**: Statistical analysis, pharmaceutical data, regulatory submissions
-- **Features**: Variable labels, formats, metadata preservation
+- **Features**: 
+  - Variable labels, formats, metadata preservation
+  - **Dual Upload**: Creates both data and metadata documents
+  - **Automatic Metadata Extraction**: Variable labels, value labels, file info
+  - **Metadata Document**: Saved with "_meta" suffix (e.g., "data_meta")
 
 #### XPT (SAS Transport Files)
 - **Extensions**: `.xpt`  
 - **Library Required**: `pyreadstat` (requires C++ build tools)
 - **Use Cases**: FDA submissions, regulatory compliance, data exchange
-- **Features**: Standardized format, cross-platform compatibility
+- **Features**: 
+  - Standardized format, cross-platform compatibility
+  - **Dual Upload**: Creates both data and metadata documents
+  - **Rich Metadata**: Creation time, modification time, variable info
+  - **Metadata Document**: Saved with "_meta" suffix (e.g., "submission_meta")
 
 ## Installation Requirements
 
@@ -104,6 +116,46 @@ if (supportedTypes.includes(fileType)) {
 } else {
   alert('Please select a CSV, XLSX, SAS7BDAT, or XPT file');
 }
+```
+
+### Excel Sheet Selection
+
+For Excel files with multiple sheets, users can select which specific sheet to process:
+
+#### Sheet Detection API
+```javascript
+// Check available sheets in Excel file
+const getExcelSheets = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await fetch('/excel-sheets', {
+    method: 'POST',
+    body: formData
+  });
+  
+  return response.json(); // Returns: { "sheets": ["Sheet1", "Sheet2", "Data"] }
+};
+```
+
+#### User Interface Flow
+1. **Multi-sheet Detection**: Automatic detection when Excel file has multiple sheets
+2. **Sheet Selection**: Dropdown menu appears for sheet selection
+3. **Upload Enhancement**: Selected sheet is included in upload request
+
+#### Upload with Sheet Selection
+```javascript
+// Upload specific Excel sheet
+const uploadWithSheet = async (file, tag, sheetName) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('tag', tag);
+  if (sheetName) {
+    formData.append('sheet_name', sheetName);
+  }
+  
+  return fetch('/upload', { method: 'POST', body: formData });
+};
 ```
 
 ## Data Processing Features
