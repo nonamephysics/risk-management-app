@@ -10,13 +10,34 @@ const api = axios.create({
 });
 
 export const documentService = {
+  // Get Excel sheet names
+  getExcelSheets: async (file, authHeaders = {}) => {
+    console.log('DEBUG: getExcelSheets called with:', { file, authHeaders });
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Create headers without Content-Type for FormData uploads
+    const headers = { ...authHeaders };
+    delete headers['Content-Type'];
+    
+    const response = await axios.post(`${API_BASE_URL}/documents/excel-sheets`, formData, { 
+      headers,
+      timeout: 30000
+    });
+    return response.data;
+  },
+
   // Upload a document
-  uploadDocument: async (file, tag, authHeaders = {}) => {
-    console.log('DEBUG: uploadDocument called with:', { file, tag, authHeaders });
+  uploadDocument: async (file, tag, sheetName = null, authHeaders = {}) => {
+    console.log('DEBUG: uploadDocument called with:', { file, tag, sheetName, authHeaders });
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('tag', tag);
+    if (sheetName) {
+      formData.append('sheet_name', sheetName);
+    }
     
     // Create headers without Content-Type for FormData uploads
     const headers = { ...authHeaders };

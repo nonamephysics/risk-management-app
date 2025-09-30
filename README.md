@@ -1,17 +1,21 @@
 # Risk App - Document Management System
 
-A full-stack web application for uploading, validating, and managing CSV/XLSX documents with non-ASCII character detection.
+A full-stack web application for uploading, validating, and managing documents (CSV, XLSX, SAS7BDAT, XPT) with enhanced statistical file support, Excel sheet selection, and non-ASCII character detection.
 
 ## Features
 
-- 📁 **File Upload**: Support for CSV and XLSX files
+- 📁 **Multi-Format File Upload**: Support for CSV, XLSX, SAS7BDAT, and XPT files
+- 📊 **Excel Sheet Selection**: Interactive dropdown for multi-sheet Excel files
+- 🔬 **Statistical File Support**: Enhanced SAS7BDAT and XPT processing with `pyreadstat`
+- 📋 **Dual Document Upload**: Creates separate data and metadata documents for statistical files
 - 🔍 **Validation**: Automatic detection of non-ASCII characters with location reporting
 - 💾 **Database Storage**: MongoDB integration for document persistence
 - 📋 **Document Management**: View, edit, and delete stored documents
 - 🏷️ **Unique Tagging System**: Organize documents with unique custom tags (no duplicates allowed)
-- � **CLI Tool**: Universal command-line interface with multi-tool compatibility (Python/Node.js/shell)
-- �🐳 **Dockerized**: Full containerization with Docker Compose
+- 🔐 **Authentication**: Bearer token authentication with Swagger UI integration
+- 🐳 **Dockerized**: Full containerization with Docker Compose
 - 🎨 **Modern UI**: Responsive React frontend
+- 📚 **API Documentation**: Interactive Swagger UI with authentication support
 
 ## Tech Stack
 
@@ -98,7 +102,7 @@ risk_app/
 - **FastAPI Application**: Modern async Python web framework
 - **Database Integration**: MongoDB with Motor async driver  
 - **Authentication**: Token-based auth with user tracking
-- **File Processing**: CSV/XLSX validation and parsing
+- **File Processing**: Multi-format validation and parsing (CSV, XLSX, SAS7BDAT, XPT)
 - **API Documentation**: Auto-generated with OpenAPI/Swagger
 
 #### Frontend (`/frontend`)
@@ -210,7 +214,7 @@ npm start
 All features require login with security code (`admin123` by default).
 
 ### 📁 1. Upload Documents
-- Click "Select File" and choose a CSV or XLSX file
+- Click "Select File" and choose a supported file (CSV, XLSX, SAS7BDAT, or XPT)
 - Enter a **unique** tag/name for the document (no duplicates allowed)
 - Click "Upload File"
 - Review any validation errors if non-ASCII characters are found
@@ -265,16 +269,56 @@ All features require login with security code (`admin123` by default).
 - `GET /health` - Health check
 - `GET /docs` - Interactive API documentation
 
+## 📊 Supported File Formats
+
+### Format Support Matrix
+
+| **Format** | **Extension** | **Description** | **Library** | **Use Cases** |
+|------------|---------------|-----------------|-------------|---------------|
+| **CSV** | `.csv` | Comma-Separated Values | pandas | General data exchange, Excel exports |
+| **Excel** | `.xlsx`, `.xls` | Microsoft Excel files | pandas + openpyxl | Spreadsheet data, formatted reports |
+| **SAS7BDAT** | `.sas7bdat` | SAS dataset files | pyreadstat | Statistical analysis, pharmaceutical data |
+| **XPT** | `.xpt` | SAS Transport files | pyreadstat | Regulatory submissions, data exchange |
+
+### Enhanced Features
+
+#### Excel File Enhancements
+
+- **Multi-Sheet Support**: Interactive dropdown for sheet selection in multi-sheet Excel files
+- **Sheet Preview**: Displays available sheets before upload for user selection
+- **Format Compatibility**: Full support for both modern `.xlsx` and legacy `.xls` formats
+
+#### Statistical File Processing (SAS7BDAT & XPT)
+
+- **pyreadstat Integration**: Uses industry-standard `pyreadstat` library for robust file processing
+- **Dual Document Upload**: Creates separate documents for data and metadata
+- **Rich Metadata Extraction**: Preserves variable labels, value labels, formats, and file properties
+- **Temporary File Processing**: Secure file handling with automatic cleanup
+- **Enhanced Error Handling**: Comprehensive error reporting and safe type conversion
+
+### Technical Details
+
+- **CSV Files**: UTF-8, Latin-1, and CP1252 encoding support with automatic detection
+- **Excel Files**: Automatic sheet detection with interactive selection for multi-sheet files
+- **SAS7BDAT**: Native SAS dataset format reading with comprehensive metadata preservation
+- **XPT**: SAS Transport format for regulatory compliance with full metadata support
+- **Data Types**: Automatic handling of dates, numbers, text, and missing values
+- **Large Files**: Efficient memory usage for processing large datasets
+- **Authentication**: All file operations require Bearer token authentication
+
 ## File Validation
 
 The system automatically validates uploaded files for:
 - **Non-ASCII Characters**: Detects characters outside the ASCII range (0-127)
 - **Location Reporting**: Provides exact row and column locations of issues
-- **Multiple Encodings**: Attempts to read CSV files with different encodings
+- **Multiple Encodings**: Attempts to read files with different encodings
+- **Format Integrity**: Validates file structure and data consistency
+- **Statistical Metadata**: Preserves variable labels and formats from SAS files
 
 ## Data Storage
 
 Documents are stored in MongoDB with the following structure:
+
 ```json
 {
   "_id": "ObjectId",
@@ -308,28 +352,33 @@ The system automatically tracks user activity:
 ## Docker Configuration
 
 ### Services
+
 - **mongodb**: MongoDB database server
 - **backend**: FastAPI application server
 - **frontend**: Nginx-served React application
 
 ### Volumes
+
 - `mongodb_data`: Persistent storage for MongoDB data
 
 ### Networks
+
 - `risk_app_network`: Internal network for service communication
 
 ## Environment Variables
 
 ### Backend (.env)
-```
+
+```env
 MONGODB_URL=mongodb://mongodb:27017
 DATABASE_NAME=risk_app
 API_HOST=0.0.0.0
 API_PORT=8000
 ```
 
-### Frontend
-```
+### Frontend Environment
+
+```env
 REACT_APP_API_URL=http://localhost:8000
 ```
 
@@ -351,6 +400,7 @@ The CLI tool automatically adapts to available system tools for maximum compatib
 ### 🔧 Multi-Tool Processing
 
 The script intelligently selects the best available tool:
+
 - 🥇 **Python 3**: Optimal CSV extraction with proper data handling
 - 🥈 **Node.js**: Reliable alternative with good CSV formatting  
 - 🥉 **Shell tools**: Guaranteed compatibility using sed/awk/grep
