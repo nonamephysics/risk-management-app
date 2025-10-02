@@ -105,6 +105,74 @@ export const documentService = {
     const response = await api.delete(`/documents/${id}`, { headers });
     return response.data;
   },
+
+  // Export document methods
+  exportDocumentCSV: async (id, authHeaders = {}) => {
+    const headers = {
+      ...authHeaders,
+    };
+    const response = await api.get(`/documents/${id}/export/csv`, { 
+      headers, 
+      responseType: 'blob' 
+    });
+    return response.data;
+  },
+
+  exportDocumentXLSX: async (id, authHeaders = {}) => {
+    const headers = {
+      ...authHeaders,
+    };
+    const response = await api.get(`/documents/${id}/export/xlsx`, { 
+      headers, 
+      responseType: 'blob' 
+    });
+    return response.data;
+  },
+
+  exportDocumentJSON: async (id, authHeaders = {}) => {
+    const headers = {
+      ...authHeaders,
+    };
+    const response = await api.get(`/documents/${id}/export/json`, { 
+      headers, 
+      responseType: 'blob' 
+    });
+    return response.data;
+  },
+
+  // Export documents by tag methods
+  exportDocumentsByTagCSV: async (tag, authHeaders = {}) => {
+    const headers = {
+      ...authHeaders,
+    };
+    const response = await api.get(`/documents/tag/${encodeURIComponent(tag)}/export/csv`, { 
+      headers, 
+      responseType: 'blob' 
+    });
+    return response.data;
+  },
+
+  exportDocumentsByTagXLSX: async (tag, authHeaders = {}) => {
+    const headers = {
+      ...authHeaders,
+    };
+    const response = await api.get(`/documents/tag/${encodeURIComponent(tag)}/export/xlsx`, { 
+      headers, 
+      responseType: 'blob' 
+    });
+    return response.data;
+  },
+
+  exportDocumentsByTagJSON: async (tag, authHeaders = {}) => {
+    const headers = {
+      ...authHeaders,
+    };
+    const response = await api.get(`/documents/tag/${encodeURIComponent(tag)}/export/json`, { 
+      headers, 
+      responseType: 'blob' 
+    });
+    return response.data;
+  },
 };
 
 export default api;

@@ -1,11 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer
+from fastapi.responses import Response
 from typing import List
 import io
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
-from typing import List
-import io
-import traceback
 import traceback
 
 from app.services.document_service import DocumentService
@@ -316,3 +313,163 @@ async def delete_document(
         raise HTTPException(status_code=500, detail="Failed to delete document")
     
     return {"message": "Document deleted successfully"}
+
+
+# Export endpoints
+@router.get("/{document_id}/export/csv", dependencies=[Depends(security)])
+async def export_document_csv(
+    document_id: str,
+    document_service: DocumentService = Depends(get_document_service),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Export a document as CSV file
+    
+    Requires authentication with Bearer token.
+    """
+    if not await document_service.document_exists(document_id):
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    csv_data = await document_service.export_document_to_csv(document_id)
+    if not csv_data:
+        raise HTTPException(status_code=404, detail="No data found for export")
+    
+    # Get document info for filename
+    document = await document_service.get_document_by_id(document_id)
+    filename = f"{document.tag}_{document.filename.split('.')[0]}.csv"
+    
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/{document_id}/export/xlsx", dependencies=[Depends(security)])
+async def export_document_xlsx(
+    document_id: str,
+    document_service: DocumentService = Depends(get_document_service),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Export a document as XLSX file
+    
+    Requires authentication with Bearer token.
+    """
+    if not await document_service.document_exists(document_id):
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    xlsx_data = await document_service.export_document_to_xlsx(document_id)
+    if not xlsx_data:
+        raise HTTPException(status_code=404, detail="No data found for export")
+    
+    # Get document info for filename
+    document = await document_service.get_document_by_id(document_id)
+    filename = f"{document.tag}_{document.filename.split('.')[0]}.xlsx"
+    
+    return Response(
+        content=xlsx_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/{document_id}/export/json", dependencies=[Depends(security)])
+async def export_document_json(
+    document_id: str,
+    document_service: DocumentService = Depends(get_document_service),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Export a document as JSON file
+    
+    Requires authentication with Bearer token.
+    """
+    if not await document_service.document_exists(document_id):
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    json_data = await document_service.export_document_to_json(document_id)
+    if not json_data:
+        raise HTTPException(status_code=404, detail="No data found for export")
+    
+    # Get document info for filename
+    document = await document_service.get_document_by_id(document_id)
+    filename = f"{document.tag}_{document.filename.split('.')[0]}.json"
+    
+    return Response(
+        content=json_data,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/tag/{tag}/export/csv", dependencies=[Depends(security)])
+async def export_documents_by_tag_csv(
+    tag: str,
+    document_service: DocumentService = Depends(get_document_service),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Export all documents with a specific tag as combined CSV file
+    
+    Requires authentication with Bearer token.
+    """
+    csv_data = await document_service.export_documents_by_tag_to_csv(tag)
+    if not csv_data:
+        raise HTTPException(status_code=404, detail="No documents found with this tag or no data to export")
+    
+    filename = f"{tag}_combined.csv"
+    
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/tag/{tag}/export/xlsx", dependencies=[Depends(security)])
+async def export_documents_by_tag_xlsx(
+    tag: str,
+    document_service: DocumentService = Depends(get_document_service),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Export all documents with a specific tag as XLSX file with multiple sheets
+    
+    Requires authentication with Bearer token.
+    """
+    xlsx_data = await document_service.export_documents_by_tag_to_xlsx(tag)
+    if not xlsx_data:
+        raise HTTPException(status_code=404, detail="No documents found with this tag or no data to export")
+    
+    filename = f"{tag}_multiple_sheets.xlsx"
+    
+    return Response(
+        content=xlsx_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/tag/{tag}/export/json", dependencies=[Depends(security)])
+async def export_documents_by_tag_json(
+    tag: str,
+    document_service: DocumentService = Depends(get_document_service),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Export all documents with a specific tag as JSON file
+    
+    Requires authentication with Bearer token.
+    """
+    json_data = await document_service.export_documents_by_tag_to_json(tag)
+    if not json_data:
+        raise HTTPException(status_code=404, detail="No documents found with this tag or no data to export")
+    
+    filename = f"{tag}_documents.json"
+    
+    return Response(
+        content=json_data,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
