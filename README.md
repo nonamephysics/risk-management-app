@@ -1,6 +1,22 @@
 # Risk App - Document Management System
 
-A full-stack web application for uploading, validating, and managing documents (CSV, XLSX, SAS7BDAT, XPT) with enhanced statistical file support, Excel sheet selection, and non-ASCII character detection.
+A full-stack web application for uploading, validating, managing, and exporting documents (CSV, XLSX, SAS7BDAT, XPT) with enhanced statistical file support, comprehensive export functionality, Excel sheet selection, and non-ASCII character detection.
+
+## 🆕 Recent Updates (October 2025)
+
+**🎉 Comprehensive Export Functionality Added!**
+- ✨ **Individual Document Export**: Export any document in CSV, XLSX, or JSON format
+- 📦 **Bulk Export by Tag**: Export all documents with the same tag as combined CSV, multi-sheet Excel, or comprehensive JSON
+- 🎨 **Enhanced UI**: New export dropdown menus and bulk export buttons with responsive design
+- 🔧 **Backend Improvements**: Added xlsxwriter dependency and enhanced document service
+- 📋 **Metadata Preservation**: JSON exports include full document metadata and validation information
+- 🔐 **Secure Access**: All export operations require authentication
+- 📱 **Mobile-Friendly**: Export interface optimized for all screen sizes
+
+**✅ Current Status**: All containers rebuilt and deployed with export functionality
+- Backend: Successfully rebuilt with xlsxwriter support
+- Frontend: Updated with new export UI components  
+- All services running and tested ✓
 
 ## Features
 
@@ -12,7 +28,9 @@ A full-stack web application for uploading, validating, and managing documents (
 - 💾 **Database Storage**: MongoDB integration for document persistence
 - 📋 **Document Management**: View, edit, and delete stored documents
 - 🏷️ **Unique Tagging System**: Organize documents with unique custom tags (no duplicates allowed)
-- 🔐 **Authentication**: Bearer token authentication with Swagger UI integration
+- � **Multi-Format Export**: Export documents in CSV, XLSX, and JSON formats
+- 📦 **Bulk Export**: Export multiple documents by tag with combined data or separate sheets
+- �🔐 **Authentication**: Bearer token authentication with Swagger UI integration
 - 🐳 **Dockerized**: Full containerization with Docker Compose
 - 🎨 **Modern UI**: Responsive React frontend
 - 📚 **API Documentation**: Interactive Swagger UI with authentication support
@@ -25,6 +43,8 @@ A full-stack web application for uploading, validating, and managing documents (
 - **Motor**: Async MongoDB driver
 - **Pandas**: Data processing and file parsing
 - **Pydantic**: Data validation and serialization
+- **pyreadstat**: Statistical file format support (SAS7BDAT, XPT)
+- **xlsxwriter**: Excel file export functionality
 
 ### Frontend
 - **React**: Modern JavaScript frontend framework
@@ -263,6 +283,15 @@ All features require login with security code (`admin123` by default).
 - `PUT /documents/{id}` - Update document with unique tag validation (records `updated_by`, returns 409 if tag exists)
 - `DELETE /documents/{id}` - Delete document
 
+### 📥 Export Endpoints
+
+- `GET /documents/{id}/export/csv` - Export individual document as CSV
+- `GET /documents/{id}/export/xlsx` - Export individual document as Excel file
+- `GET /documents/{id}/export/json` - Export individual document as JSON with metadata
+- `GET /documents/tag/{tag}/export/csv` - Export all documents by tag as combined CSV
+- `GET /documents/tag/{tag}/export/xlsx` - Export all documents by tag as multi-sheet Excel file
+- `GET /documents/tag/{tag}/export/json` - Export all documents by tag as JSON with metadata
+
 ### 🔍 Health & Status
 
 - `GET /` - API status  
@@ -315,6 +344,45 @@ The system automatically validates uploaded files for:
 - **Format Integrity**: Validates file structure and data consistency
 - **Statistical Metadata**: Preserves variable labels and formats from SAS files
 
+## 📥 Export Features
+
+The application provides comprehensive export functionality for stored documents:
+
+### Export Formats
+
+- **CSV**: Plain comma-separated values for universal compatibility
+- **XLSX**: Microsoft Excel format with proper formatting and data types
+- **JSON**: Complete data export with metadata, validation errors, and document information
+
+### Individual Document Export
+
+Export any single document in your preferred format:
+- Access via dropdown menu on each document card
+- Filenames automatically include document tag and original filename
+- All exports preserve data integrity and formatting
+
+### Bulk Export by Tag
+
+Export multiple documents sharing the same tag:
+- **CSV Export**: Combines all data into single CSV with document metadata columns
+- **XLSX Export**: Creates multi-sheet workbook with one sheet per document
+- **JSON Export**: Comprehensive export with all document metadata and validation information
+
+### Export Access
+
+- All export operations require authentication
+- Available through both the web interface and REST API
+- Downloadable files with appropriate content-type headers
+- Browser-friendly download experience with proper filenames
+
+### Export Use Cases
+
+- **Data Analysis**: Export to CSV/XLSX for analysis in Excel, R, Python, or SAS
+- **Data Backup**: JSON exports include complete document information for backup/restore
+- **Report Generation**: XLSX exports with proper formatting for stakeholder reports
+- **Data Integration**: CSV exports for importing into other systems
+- **Compliance**: Complete audit trail available in JSON exports
+
 ## Data Storage
 
 Documents are stored in MongoDB with the following structure:
@@ -334,8 +402,8 @@ Documents are stored in MongoDB with the following structure:
       "message": "Contains non-ASCII characters: ñ, é"
     }
   ],
-  "created_at": "2023-12-01T10:00:00Z",
-  "updated_at": "2023-12-01T10:00:00Z",
+  "created_at": "2025-10-03T02:00:00Z",
+  "updated_at": "2025-10-03T02:00:00Z",
   "created_by": "user_admin123",
   "updated_by": "user_admin123"
 }
@@ -508,7 +576,7 @@ The script supports multiple output formats with quality depending on available 
 ./usage.sh get-by-tag financial_data quarterly_report.xlsx
 
 # Step 4: Download to specific directory
-./usage.sh get-by-tag risk_analysis /reports/2024/risk_analysis.csv
+./usage.sh get-by-tag risk_analysis /reports/2025/risk_analysis.csv
 ```
 
 #### Direct API Calls (Alternative)

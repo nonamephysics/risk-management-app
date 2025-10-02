@@ -61,6 +61,77 @@ const DocumentList = ({ refreshTrigger, onDocumentSelect }) => {
     }
   };
 
+  const downloadFile = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleExportDocument = async (id, tag, filename, format) => {
+    try {
+      const authHeaders = getAuthHeaders();
+      let blob;
+      let exportFilename;
+      
+      switch (format) {
+        case 'csv':
+          blob = await documentService.exportDocumentCSV(id, authHeaders);
+          exportFilename = `${tag}_${filename.split('.')[0]}.csv`;
+          break;
+        case 'xlsx':
+          blob = await documentService.exportDocumentXLSX(id, authHeaders);
+          exportFilename = `${tag}_${filename.split('.')[0]}.xlsx`;
+          break;
+        case 'json':
+          blob = await documentService.exportDocumentJSON(id, authHeaders);
+          exportFilename = `${tag}_${filename.split('.')[0]}.json`;
+          break;
+        default:
+          throw new Error('Unsupported format');
+      }
+      
+      downloadFile(blob, exportFilename);
+    } catch (err) {
+      console.error(`Error exporting document as ${format}:`, err);
+      alert(`Failed to export document as ${format.toUpperCase()}`);
+    }
+  };
+
+  const handleExportByTag = async (tag, format) => {
+    try {
+      const authHeaders = getAuthHeaders();
+      let blob;
+      let exportFilename;
+      
+      switch (format) {
+        case 'csv':
+          blob = await documentService.exportDocumentsByTagCSV(tag, authHeaders);
+          exportFilename = `${tag}_combined.csv`;
+          break;
+        case 'xlsx':
+          blob = await documentService.exportDocumentsByTagXLSX(tag, authHeaders);
+          exportFilename = `${tag}_multiple_sheets.xlsx`;
+          break;
+        case 'json':
+          blob = await documentService.exportDocumentsByTagJSON(tag, authHeaders);
+          exportFilename = `${tag}_documents.json`;
+          break;
+        default:
+          throw new Error('Unsupported format');
+      }
+      
+      downloadFile(blob, exportFilename);
+    } catch (err) {
+      console.error(`Error exporting documents by tag as ${format}:`, err);
+      alert(`Failed to export documents by tag as ${format.toUpperCase()}`);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="document-list">
@@ -99,7 +170,37 @@ const DocumentList = ({ refreshTrigger, onDocumentSelect }) => {
           )}
         </form>
         {searchTag && (
-          <p className="search-info">Showing results for: "{searchTag}"</p>
+          <>
+            <p className="search-info">Showing results for: "{searchTag}"</p>
+            {documents.length > 0 && (
+              <div className="export-by-tag-section">
+                <p><strong>Export all documents with tag "{searchTag}":</strong></p>
+                <div className="export-buttons">
+                  <button 
+                    onClick={() => handleExportByTag(searchTag, 'csv')}
+                    className="btn-export btn-export-csv"
+                    title="Export as CSV (combined data)"
+                  >
+                    📊 CSV
+                  </button>
+                  <button 
+                    onClick={() => handleExportByTag(searchTag, 'xlsx')}
+                    className="btn-export btn-export-xlsx"
+                    title="Export as XLSX (multiple sheets)"
+                  >
+                    📈 XLSX
+                  </button>
+                  <button 
+                    onClick={() => handleExportByTag(searchTag, 'json')}
+                    className="btn-export btn-export-json"
+                    title="Export as JSON (with metadata)"
+                  >
+                    📄 JSON
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
       
@@ -132,6 +233,36 @@ const DocumentList = ({ refreshTrigger, onDocumentSelect }) => {
                 >
                   View/Edit
                 </button>
+                
+                <div className="export-dropdown">
+                  <button className="btn-export-toggle">
+                    📥 Export ▼
+                  </button>
+                  <div className="export-dropdown-content">
+                    <button 
+                      onClick={() => handleExportDocument(doc.id, doc.tag, doc.filename, 'csv')}
+                      className="btn-export-option"
+                      title="Export as CSV file"
+                    >
+                      📊 CSV
+                    </button>
+                    <button 
+                      onClick={() => handleExportDocument(doc.id, doc.tag, doc.filename, 'xlsx')}
+                      className="btn-export-option"
+                      title="Export as Excel file"
+                    >
+                      📈 XLSX
+                    </button>
+                    <button 
+                      onClick={() => handleExportDocument(doc.id, doc.tag, doc.filename, 'json')}
+                      className="btn-export-option"
+                      title="Export as JSON file with metadata"
+                    >
+                      📄 JSON
+                    </button>
+                  </div>
+                </div>
+                
                 <button 
                   onClick={() => handleDelete(doc.id, doc.tag)}
                   className="btn-danger"
